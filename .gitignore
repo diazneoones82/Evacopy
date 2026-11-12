@@ -1,0 +1,14 @@
+# Local credentials, tools, tests, and downloaded reference pages
+.tools/
+test-results/
+gemini-reference.html
+tools/*.exe
+*.tmp
+*.log
+.env
+.env.*
+
+# Old builds and generated artifacts; publish the current EXE with GitHub Releases
+dist/
+bin/
+obj/
