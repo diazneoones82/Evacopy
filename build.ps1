@@ -1,3 +1,5 @@
+﻿# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 diazneoones82
 param([string]$OutputPath = 'dist\release\Evacopy.exe')
 $ErrorActionPreference = 'Stop'
 $fx = Join-Path $env:WINDIR 'Microsoft.NET\Framework64\v4.0.30319'

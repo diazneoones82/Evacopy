@@ -1,3 +1,5 @@
+﻿// SPDX-License-Identifier: GPL-3.0-or-later
+// Copyright (C) 2026 diazneoones82
 using System;
 using System.IO;
 using System.Linq;

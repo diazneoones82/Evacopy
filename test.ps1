@@ -1,3 +1,5 @@
+﻿# SPDX-License-Identifier: GPL-3.0-or-later
+# Copyright (C) 2026 diazneoones82
 $ErrorActionPreference = 'Stop'
 $testRoot = Join-Path $PSScriptRoot ('test-results\' + [Guid]::NewGuid().ToString('N'))
 $previousProfile = $env:EVACOPY_PROFILE
