@@ -20,7 +20,9 @@ High priority is requested for each worker and its Robocopy process; Windows may
 
 ## Verification and source cleanup
 
-Source size and CRC-32 are recorded before copying, then both source and destination are verified. Only after every recorded file passes can optional permanent source deletion begin. Deletion defaults off and requires confirmation. Each source and destination is checked again under file locks immediately before source deletion.
+Normal copy jobs use fast mode by default: **Verify CRC-32** is unchecked, no file data is read for checksums, and completion uses Robocopy status plus destination file-size checks. Standard copy mode replaces restartable `/Z` copying, unchanged files are not forced to recopy, and selected files in the same directory are batched into multithreaded Robocopy calls. These changes remove extra work; actual throughput depends on your disks, network, files and thread count.
+
+Enable **Verify CRC-32** when content verification is needed. This records source size and CRC-32 before copying, then verifies both source and destination. **Delete source after copy** automatically requires CRC verification even if the optional checkbox was off, to preserve verified source-deletion behavior. Only after every recorded file passes can optional permanent source deletion begin. Deletion defaults off and requires confirmation. Each source and destination is checked again under file locks immediately before source deletion.
 
 For folder selections, recorded empty source directories are removed from the bottom up, including the selected root, after verified deletion. Non-empty directories and drive roots are retained. When selecting individual files, their parent folders remain. Cancellation or failure during deletion can leave some source files already deleted. Partial destination files may remain after cancellation. CRC-32 detects accidental corruption and is not a cryptographic signature.
 
@@ -43,7 +45,7 @@ The global shortcut tries **Win+C**, then **Ctrl+Alt+C** if Windows reserves Win
 .\test.ps1
 ```
 
-Build checks cover the CRC known vector, path boundaries, compact layout, checkbox contrast and embedded icon. Integration checks launch real supervisor, worker and Robocopy processes and cover simultaneous jobs, independent PIDs, overlap rejection, supervisor restart recovery, copy/CRC success, Unicode paths, empty directories, source preservation, verified move cleanup, cancellation, and complete shutdown while idle and during an active copy. Picker checks cover current folders, file parent folders, nonexistent destination paths and the native Explorer starting location. Test reports are saved under test-results. Test fixtures use an isolated service/profile and do not alter startup settings.
+Build checks cover the CRC known vector, path boundaries, compact layout, checkbox contrast and embedded icon. Integration checks launch real supervisor, worker and Robocopy processes and cover simultaneous jobs, independent PIDs, overlap rejection, supervisor restart recovery, copy/CRC success, fast-mode jobs with zero CRC bytes read, optional verification, batched file selections, Unicode paths, empty directories, source preservation, verified move cleanup, cancellation, and complete shutdown while idle and during an active copy. Picker checks cover current folders, file parent folders, nonexistent destination paths and the native Explorer starting location. Test reports are saved under test-results. Test fixtures use an isolated service/profile and do not alter startup settings.
 
 The EXE is unsigned. Try disposable data before enabling permanent deletion for important files.
 

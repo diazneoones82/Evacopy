@@ -14,7 +14,7 @@ using System.Web.Script.Serialization;
 public class JobSpec {
     public string Id, Destination, CopyDestination;
     public string[] Sources;
-    public bool DeleteSource, IncludeSourceFolder;
+    public bool DeleteSource, IncludeSourceFolder, VerifyCrc;
     public int Threads=32;
     public string Priority="High";
 }
@@ -23,7 +23,7 @@ public class JobState {
     public double Percent, Speed;
     public int WorkerPid, CopyPid;
     public bool Finished, Successful;
-    public long Sequence;
+    public long Sequence, CrcBytesRead;
 }
 public class Request { public string Command; public JobSpec Job; public string Id; }
 public class Reply { public string Error; public JobState[] Jobs; public string Id; public int ServicePid, ProtocolVersion; }
@@ -41,8 +41,8 @@ static class Store {
     public static Reply Send(Request request){using(var pipe=new NamedPipeClientStream(".",Pipe,PipeDirection.InOut,PipeOptions.Asynchronous)){pipe.Connect(2500);using(var writer=new StreamWriter(pipe,new System.Text.UTF8Encoding(false),4096,true){AutoFlush=true})using(var reader=new StreamReader(pipe,System.Text.Encoding.UTF8,true,4096,true)){writer.WriteLine(Json(request));var read=reader.ReadLineAsync();if(!read.Wait(request.Command=="exit"?20000:5000))throw new TimeoutException("Evacopy service response timed out.");var line=read.Result;if(line==null)throw new IOException("Service disconnected.");return Parse<Reply>(line);}}}
     public static void EnsureService(){
         Reply current=null;try{current=Send(new Request{Command="ping"});}catch(IOException){}catch(TimeoutException){}
-        if(current!=null){if(current.ProtocolVersion>=4)return;var shutdown=Send(new Request{Command="shutdown"});if(shutdown.Error!=null)throw new IOException("Finish the running jobs in the older Evacopy version before starting this update.");Thread.Sleep(200);}
-        Process.Start(new ProcessStartInfo(Exe,"--service"){UseShellExecute=false,CreateNoWindow=true});for(int i=0;i<30;i++){try{if(Send(new Request{Command="ping"}).ProtocolVersion>=4)return;}catch(IOException){}catch(TimeoutException){}Thread.Sleep(100);}throw new IOException("Evacopy service did not start.");
+        if(current!=null){if(current.ProtocolVersion>=5)return;var shutdown=Send(new Request{Command="shutdown"});if(shutdown.Error!=null)throw new IOException("Finish the running jobs in the older Evacopy version before starting this update.");Thread.Sleep(200);}
+        Process.Start(new ProcessStartInfo(Exe,"--service"){UseShellExecute=false,CreateNoWindow=true});for(int i=0;i<30;i++){try{if(Send(new Request{Command="ping"}).ProtocolVersion>=5)return;}catch(IOException){}catch(TimeoutException){}Thread.Sleep(100);}throw new IOException("Evacopy service did not start.");
     }
     static bool IsEvacopy(Process process,string executable){string actual=process.MainModule.FileName;return executable!=null?String.Equals(actual,executable,StringComparison.OrdinalIgnoreCase):String.Equals(Path.GetFileName(actual),Path.GetFileName(Exe),StringComparison.OrdinalIgnoreCase)||String.Equals(Path.GetFileName(actual),"Evacopy.exe",StringComparison.OrdinalIgnoreCase);}
     internal static Process RecordedProcess(string path){
@@ -120,7 +120,7 @@ static class Kernel {
     }
     static Reply Handle(Request request){
         switch(request.Command){
-        case "ping": return new Reply{ServicePid=Process.GetCurrentProcess().Id,ProtocolVersion=4};
+        case "ping": return new Reply{ServicePid=Process.GetCurrentProcess().Id,ProtocolVersion=5};
         case "list": return new Reply{Jobs=States()};
         case "submit":
             Validate(request.Job);var spec=request.Job;spec.Id=Guid.NewGuid().ToString("N");Store.Write(Store.PathFor(spec.Id,".job"),spec);
