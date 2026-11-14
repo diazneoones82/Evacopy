@@ -1,4 +1,4 @@
-﻿// SPDX-License-Identifier: GPL-3.0-or-later
+// SPDX-License-Identifier: GPL-3.0-or-later
 // Copyright (C) 2026 diazneoones82
 using System;
 using System.IO;
@@ -25,7 +25,7 @@ partial class App {
 <TabItem Header='New job'><Border CornerRadius='10' BorderBrush='#1A9CFF' BorderThickness='1' Padding='10,6' Background='#0A2342'><StackPanel>
 <TextBlock Text='SOURCE' FontSize='10' Foreground='#00F0FF'/><DockPanel Margin='0,2,0,4'><Button Name='Files' DockPanel.Dock='Right' Content='Files' Padding='9,4' Margin='3,0,0,0'/><Button Name='Folder' DockPanel.Dock='Right' Content='Folder' Padding='9,4' Margin='3,0,0,0'/><TextBox Name='Source' Padding='6,4' IsReadOnly='True' Text='Choose a folder or files'/></DockPanel>
 <TextBlock Text='DESTINATION' FontSize='10' Foreground='#00F0FF'/><DockPanel Margin='0,2,0,4'><Button Name='Browse' Content='Browse…' DockPanel.Dock='Right' Padding='9,4' Margin='3,0,0,0'/><TextBox Name='Destination' Padding='6,4' ToolTip='Type a destination folder; missing folders are created.'/></DockPanel>
-<StackPanel Orientation='Horizontal'><TextBlock Text='⚙ Threads' FontSize='11' VerticalAlignment='Center'/><ComboBox Name='Threads' SelectedIndex='2' Width='62' Margin='7,0,14,0'><ComboBoxItem Content='8'/><ComboBoxItem Content='16'/><ComboBoxItem Content='32'/><ComboBoxItem Content='64'/><ComboBoxItem Content='128'/></ComboBox><TextBlock Text='CPU priority' FontSize='11' VerticalAlignment='Center'/><ComboBox Name='Priority' SelectedIndex='2' Width='115' Margin='7,0,0,0'><ComboBoxItem Content='Normal'/><ComboBoxItem Content='AboveNormal'/><ComboBoxItem Content='High'/></ComboBox></StackPanel>
+<CheckBox Name='IncludeFolder' IsChecked='True' IsEnabled='False' Content='Copy source folder itself (create its name at destination)' FontSize='11' Margin='0,2,0,4' ToolTip='Creates a folder matching the source name. Reuses the destination if it already has that name. Uncheck to copy contents only.'/><StackPanel Orientation='Horizontal'><TextBlock Text='⚙ Threads' FontSize='11' VerticalAlignment='Center'/><ComboBox Name='Threads' SelectedIndex='2' Width='62' Margin='7,0,14,0'><ComboBoxItem Content='8'/><ComboBoxItem Content='16'/><ComboBoxItem Content='32'/><ComboBoxItem Content='64'/><ComboBoxItem Content='128'/></ComboBox><TextBlock Text='CPU priority' FontSize='11' VerticalAlignment='Center'/><ComboBox Name='Priority' SelectedIndex='2' Width='115' Margin='7,0,0,0'><ComboBoxItem Content='Normal'/><ComboBoxItem Content='AboveNormal'/><ComboBoxItem Content='High'/></ComboBox></StackPanel>
 <CheckBox Name='Remove' Margin='0,5,0,3' FontSize='11' Content='Delete source files and empty folders after verification'/>
 <DockPanel><Button Name='Start' Content='Start copy job' DockPanel.Dock='Right' Padding='12,5' Margin='3,0,0,0' BorderBrush='#00F0FF'/><TextBlock Text='Existing destination files may be overwritten.' FontSize='10' VerticalAlignment='Center' TextWrapping='Wrap'/></DockPanel>
 </StackPanel></Border></TabItem>
@@ -46,9 +46,9 @@ partial class App {
         source=Get<TextBox>("Source");destination=Get<TextBox>("Destination");status=Get<TextBlock>("Status");metrics=Get<TextBlock>("Metrics");progress=Get<ProgressBar>("Progress");start=Get<Button>("Start");cancel=Get<Button>("Cancel");remove=Get<CheckBox>("Remove");jobs=Get<ListBox>("Jobs");
         try{using(var icon=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Evacopy.ico")){if(icon!=null){window.Icon=System.Windows.Media.Imaging.BitmapFrame.Create(icon);using(var brand=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Evacopy.png"))Get<Image>("BrandIcon").Source=System.Windows.Media.Imaging.BitmapFrame.Create(brand);}}}catch{}
         Get<Button>("Folder").Click+=delegate{ChooseFolder();};
-        Get<Button>("Files").Click+=delegate{using(var dialog=new Forms.OpenFileDialog{Multiselect=true})if(dialog.ShowDialog()==Forms.DialogResult.OK){selected=dialog.FileNames;source.Text=String.Join("; ",selected);}};
+        Get<Button>("Files").Click+=delegate{using(var dialog=new Forms.OpenFileDialog{Multiselect=true})if(dialog.ShowDialog()==Forms.DialogResult.OK){selected=dialog.FileNames;Get<CheckBox>("IncludeFolder").IsEnabled=false;source.Text=String.Join("; ",selected);}};
         Get<Button>("Browse").Click+=delegate{using(var dialog=new Forms.FolderBrowserDialog())if(dialog.ShowDialog()==Forms.DialogResult.OK)destination.Text=dialog.SelectedPath;};
-        Get<Button>("AddJob").Click+=delegate{Get<TabControl>("JobTabs").SelectedIndex=0;selected=null;source.Text="Choose a folder or one or more files";remove.IsChecked=false;ChooseFolder();};
+        Get<Button>("AddJob").Click+=delegate{Get<TabControl>("JobTabs").SelectedIndex=0;selected=null;Get<CheckBox>("IncludeFolder").IsEnabled=false;source.Text="Choose a folder or one or more files";remove.IsChecked=false;ChooseFolder();};
         start.Click+=async delegate{await Submit();};cancel.Click+=async delegate{var row=jobs.SelectedItem as ListBoxItem;if(row==null)return;string id=(string)row.Tag;try{await Task.Run(()=>Store.Send(new Request{Command="cancel",Id=id}));Note("Cancellation requested for selected job.");}catch(Exception ex){Note(ex.Message);}};
         jobs.SelectionChanged+=delegate{ShowSelected();};
         refresh=new DispatcherTimer{Interval=TimeSpan.FromMilliseconds(600)};refresh.Tick+=async delegate{await Refresh();};
@@ -58,12 +58,12 @@ partial class App {
     static T Get<T>(string name){return (T)window.FindName(name);}
     static void UI(Action action){window.Dispatcher.Invoke(action);}
     static void Note(string text){if(window==null)return;status.Text=text;status.ToolTip=text;}
-    static void ChooseFolder(){using(var dialog=new Forms.FolderBrowserDialog())if(dialog.ShowDialog()==Forms.DialogResult.OK){selected=new[]{dialog.SelectedPath};source.Text=dialog.SelectedPath;}}
+    static void ChooseFolder(){using(var dialog=new Forms.FolderBrowserDialog())if(dialog.ShowDialog()==Forms.DialogResult.OK){selected=new[]{dialog.SelectedPath};Get<CheckBox>("IncludeFolder").IsEnabled=true;source.Text=dialog.SelectedPath;}}
     static async Task Submit(){
         if(selected==null||String.IsNullOrWhiteSpace(destination.Text)){MessageBox.Show(window,"Choose a source and destination.");return;}
         bool deleting=remove.IsChecked==true;
         if(deleting&&MessageBox.Show(window,"Permanently delete source files and empty source folders after every file verifies?","Evacopy · verified move",MessageBoxButton.YesNo,MessageBoxImage.Warning)!=MessageBoxResult.Yes)return;
-        var spec=new JobSpec{Sources=selected.ToArray(),Destination=destination.Text,DeleteSource=deleting,Threads=Int32.Parse(((ComboBoxItem)Get<ComboBox>("Threads").SelectedItem).Content.ToString()),Priority=((ComboBoxItem)Get<ComboBox>("Priority").SelectedItem).Content.ToString()};
+        var spec=new JobSpec{Sources=selected.ToArray(),Destination=destination.Text,DeleteSource=deleting,IncludeSourceFolder=Get<CheckBox>("IncludeFolder").IsEnabled&&Get<CheckBox>("IncludeFolder").IsChecked==true,Threads=Int32.Parse(((ComboBoxItem)Get<ComboBox>("Threads").SelectedItem).Content.ToString()),Priority=((ComboBoxItem)Get<ComboBox>("Priority").SelectedItem).Content.ToString()};
         start.IsEnabled=false;
         try{var response=await Task.Run(()=>{Store.EnsureService();return Store.Send(new Request{Command="submit",Job=spec});});if(response.Error!=null)throw new IOException(response.Error);await Refresh();ListBoxItem row;if(rows.TryGetValue(response.Id,out row))jobs.SelectedItem=row;Get<TabControl>("JobTabs").SelectedIndex=1;Note("Job started. Use + ⚙ to add another.");}
         catch(Exception ex){MessageBox.Show(window,ex.Message,"Evacopy");}finally{start.IsEnabled=true;}
@@ -72,6 +72,7 @@ partial class App {
     static void ShowSelected(){var row=jobs.SelectedItem as ListBoxItem;JobState state;if(row==null||!states.TryGetValue((string)row.Tag,out state))return;progress.Value=state.Percent;metrics.Text=state.Percent.ToString("N1")+"% · "+state.Speed.ToString("N1")+" MB/s";status.Text=state.Phase;status.ToolTip=state.Detail+"\n"+state.Error;cancel.IsEnabled=!state.Finished;}
     internal static string Layout {get{using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Theme.xaml"))using(var reader=new StreamReader(stream)){return System.Text.RegularExpressions.Regex.Replace(Xaml,"<Window.Resources/?>[\\s\\S]*?</Window.Resources>|<Window.Resources/>","<Window.Resources>"+reader.ReadToEnd()+"</Window.Resources>");}}}
 }
+
 
 
 

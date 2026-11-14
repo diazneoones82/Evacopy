@@ -4,7 +4,7 @@ Run **dist\release\Evacopy.exe**. This is the current release; EXEs elsewhere in
 
 ## Multiple copy jobs
 
-Choose a source folder or multiple files and a destination. Missing destination folders are created. Folder selections copy their contents recursively, including empty folders. Existing destination files may be overwritten; destination-only files are retained.
+Choose a source folder or multiple files and a destination. Missing destination folders are created. For folder selections, **Copy source folder itself** is enabled by default: selecting `C:\Source\Photos` and destination `D:\Backup` copies into `D:\Backup\Photos`, creating that folder when needed. If the selected destination is already named `Photos`, it is reused, avoiding `Photos\Photos`. Uncheck this option to copy only the source folder's contents directly into the destination. The option is disabled for individual-file selections. Both modes retain nested folders and empty folders. Existing destination files may be overwritten; destination-only files are retained.
 
 Choose 8–128 Robocopy threads and Normal, AboveNormal or High CPU priority independently for each job. Click **Start copy job**. The **Transfers** tab opens to show the job list. Click **+ ⚙** to choose the next source on the **New job** tab; choose its destination and settings, then start another job. Select a job to see its status, percentage and speed or use **Cancel selected**. Jobs with overlapping destinations, conflicting source/destination folders, or source-deletion conflicts are rejected.
 
