@@ -1,0 +1,207 @@
+{
+  "Caveats": "Single machine; warm-cache observations; no system cache clearing; fixture generation and content verification excluded; app timings include submit, worker startup, scanning, copying/moving, checking, completion polling; brokers warmed before timing.",
+  "Results": [
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "baseline",
+      "Run": 1,
+      "ElapsedMilliseconds": 6118.202700000001,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "candidate",
+      "Run": 1,
+      "ElapsedMilliseconds": 2597.2865,
+      "ProgressMetadataProbes": 512,
+      "TransferMethod": "Robocopy",
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "robocopy",
+      "Run": 1,
+      "ElapsedMilliseconds": 3138.0664,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "robocopy",
+      "Run": 2,
+      "ElapsedMilliseconds": 3323.898,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "candidate",
+      "Run": 2,
+      "ElapsedMilliseconds": 3698.1937000000003,
+      "ProgressMetadataProbes": 894,
+      "TransferMethod": "Robocopy",
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "baseline",
+      "Run": 2,
+      "ElapsedMilliseconds": 4886.2787,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "baseline",
+      "Run": 3,
+      "ElapsedMilliseconds": 4962.1147,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "candidate",
+      "Run": 3,
+      "ElapsedMilliseconds": 6012.3033000000005,
+      "ProgressMetadataProbes": 1792,
+      "TransferMethod": "Robocopy",
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "small-files-6000",
+      "Engine": "robocopy",
+      "Run": 3,
+      "ElapsedMilliseconds": 3149.6042,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "same-volume-move-128MiB",
+      "Engine": "baseline",
+      "Run": 1,
+      "ElapsedMilliseconds": 348.2203,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "same-volume-move-128MiB",
+      "Engine": "candidate",
+      "Run": 1,
+      "ElapsedMilliseconds": 117.5216,
+      "ProgressMetadataProbes": 0,
+      "TransferMethod": "Same-volume rename",
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "same-volume-move-128MiB",
+      "Engine": "candidate",
+      "Run": 2,
+      "ElapsedMilliseconds": 168.0111,
+      "ProgressMetadataProbes": 0,
+      "TransferMethod": "Same-volume rename",
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "same-volume-move-128MiB",
+      "Engine": "baseline",
+      "Run": 2,
+      "ElapsedMilliseconds": 287.94870000000003,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "same-volume-move-128MiB",
+      "Engine": "baseline",
+      "Run": 3,
+      "ElapsedMilliseconds": 293.7676,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "same-volume-move-128MiB",
+      "Engine": "candidate",
+      "Run": 3,
+      "ElapsedMilliseconds": 130.3562,
+      "ProgressMetadataProbes": 0,
+      "TransferMethod": "Same-volume rename",
+      "CrcBytesRead": 0
+    },
+    {
+      "Fixture": "crc-32MiB-x8",
+      "Engine": "bytewise",
+      "Run": 1,
+      "ElapsedMilliseconds": 677.8395,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "crc-32MiB-x8",
+      "Engine": "slicing-by-8",
+      "Run": 1,
+      "ElapsedMilliseconds": 379.2194,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "crc-32MiB-x8",
+      "Engine": "slicing-by-8",
+      "Run": 2,
+      "ElapsedMilliseconds": 374.6113,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "crc-32MiB-x8",
+      "Engine": "bytewise",
+      "Run": 2,
+      "ElapsedMilliseconds": 687.7023,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "crc-32MiB-x8",
+      "Engine": "bytewise",
+      "Run": 3,
+      "ElapsedMilliseconds": 685.6137,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    },
+    {
+      "Fixture": "crc-32MiB-x8",
+      "Engine": "slicing-by-8",
+      "Run": 3,
+      "ElapsedMilliseconds": 364.80850000000004,
+      "ProgressMetadataProbes": null,
+      "TransferMethod": null,
+      "CrcBytesRead": null
+    }
+  ],
+  "Metadata": {
+    "BaselineExe": "Evacopy v0.1.5 (published EXE)",
+    "CandidateExe": "Evacopy v0.1.6 (this release EXE)",
+    "BaselineSha256": "c21d89148e18e732b0a0be889b2e0992f54959a6bfa9dfe403f2495094f57d38",
+    "CandidateSha256": "f56c956ef25dc59201044dbf300d62edabb36df6f2398f1436197833ee816b1b",
+    "OS": "Microsoft Windows NT 10.0.19045.0",
+    "ProcessorCount": 4,
+    "Threads": 32,
+    "Priority": "Normal",
+    "SmallFileCount": 6000,
+    "HashCaptureTiming": "Recorded immediately after completed benchmark; original harness did not capture hashes at launch.",
+    "CandidateLastWriteUtc": "2026-11-14T11:28:32.2766709Z"
+  }
+}
