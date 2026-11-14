@@ -16,7 +16,7 @@ public class JobSpec {
     public string[] Sources;
     public bool DeleteSource, IncludeSourceFolder, VerifyCrc;
     public int Threads=32;
-    public string Priority="High";
+    public string Priority="High", Operation="Copy";
 }
 public class JobState {
     public string Id, Title, Phase="Queued", Detail="", Error="";
@@ -41,8 +41,8 @@ static class Store {
     public static Reply Send(Request request){using(var pipe=new NamedPipeClientStream(".",Pipe,PipeDirection.InOut,PipeOptions.Asynchronous)){pipe.Connect(2500);using(var writer=new StreamWriter(pipe,new System.Text.UTF8Encoding(false),4096,true){AutoFlush=true})using(var reader=new StreamReader(pipe,System.Text.Encoding.UTF8,true,4096,true)){writer.WriteLine(Json(request));var read=reader.ReadLineAsync();if(!read.Wait(request.Command=="exit"?20000:5000))throw new TimeoutException("Evacopy service response timed out.");var line=read.Result;if(line==null)throw new IOException("Service disconnected.");return Parse<Reply>(line);}}}
     public static void EnsureService(){
         Reply current=null;try{current=Send(new Request{Command="ping"});}catch(IOException){}catch(TimeoutException){}
-        if(current!=null){if(current.ProtocolVersion>=5)return;var shutdown=Send(new Request{Command="shutdown"});if(shutdown.Error!=null)throw new IOException("Finish the running jobs in the older Evacopy version before starting this update.");Thread.Sleep(200);}
-        Process.Start(new ProcessStartInfo(Exe,"--service"){UseShellExecute=false,CreateNoWindow=true});for(int i=0;i<30;i++){try{if(Send(new Request{Command="ping"}).ProtocolVersion>=5)return;}catch(IOException){}catch(TimeoutException){}Thread.Sleep(100);}throw new IOException("Evacopy service did not start.");
+        if(current!=null){if(current.ProtocolVersion>=6)return;var shutdown=Send(new Request{Command="shutdown"});if(shutdown.Error!=null)throw new IOException("Finish the running jobs in the older Evacopy version before starting this update.");Thread.Sleep(200);}
+        Process.Start(new ProcessStartInfo(Exe,"--service"){UseShellExecute=false,CreateNoWindow=true});for(int i=0;i<30;i++){try{if(Send(new Request{Command="ping"}).ProtocolVersion>=6)return;}catch(IOException){}catch(TimeoutException){}Thread.Sleep(100);}throw new IOException("Evacopy service did not start.");
     }
     static bool IsEvacopy(Process process,string executable){string actual=process.MainModule.FileName;return executable!=null?String.Equals(actual,executable,StringComparison.OrdinalIgnoreCase):String.Equals(Path.GetFileName(actual),Path.GetFileName(Exe),StringComparison.OrdinalIgnoreCase)||String.Equals(Path.GetFileName(actual),"Evacopy.exe",StringComparison.OrdinalIgnoreCase);}
     internal static Process RecordedProcess(string path){
@@ -73,7 +73,7 @@ static class JobPaths {
     public static string FolderDestination(string source,string destination,bool includeFolder){
         string target=Path.GetFullPath(destination);if(!includeFolder)return target;
         string name=new DirectoryInfo(Path.GetFullPath(source)).Name;
-        if(String.IsNullOrEmpty(name)||String.Equals(App.Full(source),App.Full(Path.GetPathRoot(source)),StringComparison.OrdinalIgnoreCase))throw new IOException("A drive root has no source folder name. Disable 'Copy source folder itself' to copy its contents.");
+        if(String.IsNullOrEmpty(name)||String.Equals(App.Full(source),App.Full(Path.GetPathRoot(source)),StringComparison.OrdinalIgnoreCase))throw new IOException("A drive root has no source folder name. Disable 'Keep source folder name' to copy its contents.");
         if(String.Equals(new DirectoryInfo(target).Name,name,StringComparison.OrdinalIgnoreCase))return target;
         return Path.Combine(target,name);
     }
@@ -96,18 +96,19 @@ static class Kernel {
         }foreach(var p in workers.Values)p.Dispose();File.Delete(Path.Combine(Store.Root,"service.process"));mutex.ReleaseMutex();}return 0;
     }
     static bool Overlap(string a,string b){return App.Inside(a,b)||App.Inside(b,a);}
-    static IEnumerable<string> SourceRoots(JobSpec spec){return spec.Sources.Select(s=>Directory.Exists(s)?s:Path.GetDirectoryName(s));}
+    static IEnumerable<string> SourceRoots(JobSpec spec){return spec.Sources;}
     static void Validate(JobSpec spec){
         if(spec==null||spec.Sources==null||spec.Sources.Length==0)throw new IOException("Choose a source.");
+        if(spec.Operation!="Copy"&&spec.Operation!="Move")throw new IOException("Choose Copy or Move.");if(spec.Operation=="Move")spec.DeleteSource=true;if(spec.DeleteSource)spec.Operation="Move";
         spec.Destination=Path.GetFullPath(spec.Destination);App.SafePath(spec.Destination);
         if(spec.Threads<1||spec.Threads>128)throw new IOException("Threads must be between 1 and 128.");
         if(!new[]{"Normal","AboveNormal","High"}.Contains(spec.Priority))throw new IOException("Choose a supported priority.");
         spec.Sources=spec.Sources.Select(Path.GetFullPath).ToArray();
         bool folder=spec.Sources.Length==1&&Directory.Exists(spec.Sources[0]);
-        if(spec.IncludeSourceFolder&&!folder)throw new IOException("Copy source folder itself requires a single source folder.");
+        if(spec.IncludeSourceFolder&&!folder)throw new IOException("Keep source folder name requires a single source folder.");
         spec.CopyDestination=folder?JobPaths.FolderDestination(spec.Sources[0],spec.Destination,spec.IncludeSourceFolder):spec.Destination;
         App.SafePath(spec.CopyDestination);
-        foreach(var s in spec.Sources){if(!Directory.Exists(s)&&!File.Exists(s))throw new IOException("Source not found: "+s);if(Overlap(Directory.Exists(s)?s:Path.GetDirectoryName(s),spec.CopyDestination))throw new IOException("Source and destination must not overlap.");}
+        foreach(var s in spec.Sources){bool directory=Directory.Exists(s);if(!directory&&!File.Exists(s))throw new IOException("Source not found: "+s);if(directory?Overlap(s,spec.CopyDestination):String.Equals(App.Full(s),App.Full(Path.Combine(spec.CopyDestination,Path.GetFileName(s))),StringComparison.OrdinalIgnoreCase))throw new IOException("Source and destination must not overlap.");}
         foreach(var pair in specifications){Process running;if(!workers.TryGetValue(pair.Key,out running)||running.HasExited)continue;var other=pair.Value;
             if(Overlap(JobPaths.Target(spec),JobPaths.Target(other))||SourceRoots(other).Any(s=>Overlap(s,JobPaths.Target(spec)))||SourceRoots(spec).Any(s=>Overlap(s,JobPaths.Target(other)))||((spec.DeleteSource||other.DeleteSource)&&SourceRoots(spec).Any(s=>SourceRoots(other).Any(o=>Overlap(s,o)))))throw new IOException("This job overlaps an active copy or move. Choose separate folders or wait.");
         }
@@ -120,11 +121,11 @@ static class Kernel {
     }
     static Reply Handle(Request request){
         switch(request.Command){
-        case "ping": return new Reply{ServicePid=Process.GetCurrentProcess().Id,ProtocolVersion=5};
+        case "ping": return new Reply{ServicePid=Process.GetCurrentProcess().Id,ProtocolVersion=6};
         case "list": return new Reply{Jobs=States()};
         case "submit":
             Validate(request.Job);var spec=request.Job;spec.Id=Guid.NewGuid().ToString("N");Store.Write(Store.PathFor(spec.Id,".job"),spec);
-            Store.Write(Store.PathFor(spec.Id,".state"),new JobState{Id=spec.Id,Title=Path.GetFileName(spec.Sources[0].TrimEnd('\\'))});
+            Store.Write(Store.PathFor(spec.Id,".state"),new JobState{Id=spec.Id,Title=spec.Operation+" · "+Path.GetFileName(spec.Sources[0].TrimEnd('\\'))});
             var p=Process.Start(new ProcessStartInfo(Store.Exe,"--worker "+spec.Id){UseShellExecute=false,CreateNoWindow=true});workers.Add(spec.Id,p);specifications.Add(spec.Id,spec);Store.Write(Store.PathFor(spec.Id,".process"),new WorkerIdentity{Pid=p.Id,Started=p.StartTime.ToUniversalTime().Ticks,Executable=Store.Exe});return new Reply{Id=spec.Id};
         case "cancel": if(workers.ContainsKey(request.Id)&&!workers[request.Id].HasExited)File.WriteAllText(Store.PathFor(request.Id,".cancel"),"");return new Reply();
         case "exit": StopWorkers();stopping=true;return new Reply{ServicePid=Process.GetCurrentProcess().Id};

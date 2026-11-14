@@ -19,7 +19,7 @@ static class Worker {
     static uint Crc(string file){using(var stream=new FileStream(file,FileMode.Open,FileAccess.Read,FileShare.Read))return Crc(stream);}
     static uint Crc(Stream stream){uint crc=0xffffffff;byte[] buffer=new byte[1024*1024];int read;while((read=stream.Read(buffer,0,buffer.Length))>0){Check();state.CrcBytesRead+=read;for(int i=0;i<read;i++)crc=App.Table[(crc^buffer[i])&255]^(crc>>8);}return crc^0xffffffff;}
     public static int Run(string id){
-        spec=Store.Read<JobSpec>(Store.PathFor(id,".job"));state=Store.Read<JobState>(Store.PathFor(id,".state"));state.WorkerPid=Process.GetCurrentProcess().Id;string destination=JobPaths.Target(spec);verifyCrc=spec.VerifyCrc||spec.DeleteSource;
+        spec=Store.Read<JobSpec>(Store.PathFor(id,".job"));state=Store.Read<JobState>(Store.PathFor(id,".state"));state.WorkerPid=Process.GetCurrentProcess().Id;string destination=JobPaths.Target(spec);spec.DeleteSource=spec.DeleteSource||spec.Operation=="Move";verifyCrc=spec.VerifyCrc||spec.DeleteSource;
         try{
             try{Process.GetCurrentProcess().PriorityClass=(ProcessPriorityClass)Enum.Parse(typeof(ProcessPriorityClass),spec.Priority);}catch{state.Detail="Windows denied requested worker priority.";}
             Phase("Scanning");var directories=new List<string>();bool folder=spec.Sources.Length==1&&Directory.Exists(spec.Sources[0]);
@@ -35,7 +35,7 @@ static class Worker {
             if(spec.DeleteSource){Phase("Deleting verified source");foreach(var e in entries){Check();App.SafePath(Path.GetDirectoryName(e.Source));App.SafePath(Path.GetDirectoryName(e.Target));using(var source=new FileStream(e.Source,FileMode.Open,FileAccess.Read,FileShare.Delete))using(var target=new FileStream(e.Target,FileMode.Open,FileAccess.Read,FileShare.Read)){if(source.Length!=e.Size||Crc(source)!=e.Crc||target.Length!=e.Size||Crc(target)!=e.Crc)throw new IOException("File changed before deletion: "+e.Source);File.Delete(e.Source);}}
                 if(folder)App.RemoveEmptyFolders(spec.Sources[0],destination,directories,cancel.Token,delegate(string message){Check();state.Detail=message;Save();});
             }
-            state.Percent=100;state.Successful=true;state.Phase=verifyCrc?"Completed · CRC verified":"Completed · CRC off";state.Detail=entries.Count+(verifyCrc?" files CRC verified":" files copied; size checks passed (CRC off)");return 0;
+            state.Percent=100;state.Successful=true;state.Phase=spec.DeleteSource?"Completed · moved (CRC verified)":verifyCrc?"Completed · CRC verified":"Completed · CRC off";state.Detail=entries.Count+(verifyCrc?" files CRC verified":" files copied; size checks passed (CRC off)");return 0;
         }catch(OperationCanceledException){state.Phase="Cancelled";state.Error="Partial destination files may remain. Completed source deletions cannot be undone.";return 2;}
         catch(Exception ex){state.Phase="Failed";state.Error=ex.Message;return 1;}
         finally{state.CopyPid=0;state.Finished=true;Save(true);cancel.Dispose();}
