@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Collections.Generic;
 using System.Threading;
-class Entry { public string Source, Target; public long Size, OriginalTargetTicks=-1, OriginalTargetSize=-1; public uint Crc; }
+class Entry { public string Source, Target; public long Size, SourceModifiedTicks, OriginalTargetTicks=-1, OriginalTargetSize=-1; public uint Crc; }
 partial class App {
     internal static string Full(string s){return Path.GetFullPath(s).TrimEnd(Path.DirectorySeparatorChar)+Path.DirectorySeparatorChar;}
     internal static bool Inside(string a,string b){return Full(a).StartsWith(Full(b),StringComparison.OrdinalIgnoreCase);}
