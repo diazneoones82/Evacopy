@@ -17,7 +17,7 @@ partial class App {
     static Forms.NotifyIcon tray;
     static HwndSource native;
     static IntPtr handle;
-    static bool exiting, registered;
+    static bool exiting, registered, quitting;
     static readonly uint ShowMessage = RegisterWindowMessage("Evacopy.ShowWindow.v1");
     [DllImport("user32.dll", SetLastError=true)] static extern bool RegisterHotKey(IntPtr h, int id, uint modifiers, uint key);
     [DllImport("user32.dll")] static extern bool UnregisterHotKey(IntPtr h, int id);
@@ -41,13 +41,20 @@ partial class App {
             try{int dark=1;DwmSetWindowAttribute(handle,20,ref dark,4);}catch{}
             tray=new Forms.NotifyIcon{Icon=LoadTrayIcon(),Text="Evacopy",Visible=true};
             var menu=new Forms.ContextMenuStrip();menu.Items.Add("Open Evacopy",null,delegate{UI(Reveal);});
-            menu.Items.Add("Exit",null,delegate{UI(delegate{exiting=true;window.Close();});});
+            menu.Items.Add("Exit",null,delegate{UI(ExitApplication);});
             tray.ContextMenuStrip=menu;tray.DoubleClick+=delegate{UI(Reveal);};
         };
         window.Closing+=delegate(object sender,System.ComponentModel.CancelEventArgs e){if(!exiting){e.Cancel=true;window.Hide();}};
         window.StateChanged+=delegate{if(window.WindowState==WindowState.Minimized)window.Hide();};
         window.Closed+=delegate{if(registered)UnregisterHotKey(handle,1);if(native!=null)native.RemoveHook(DesktopMessages);if(tray!=null){tray.Visible=false;tray.Dispose();}instance.ReleaseMutex();instance.Dispose();};
         window.ContentRendered+=delegate{if(startup)window.Hide();};
+    }
+    static async void ExitApplication(){
+        if(quitting)return;quitting=true;refresh.Stop();window.IsEnabled=false;Get<TabControl>("JobTabs").SelectedIndex=1;Note("Stopping background processes…");
+        try{
+            try{await System.Threading.Tasks.Task.WhenAll(serviceReady??System.Threading.Tasks.Task.FromResult(0),submissionTask??System.Threading.Tasks.Task.FromResult(0));}catch{}
+            await System.Threading.Tasks.Task.Run(()=>Store.StopAll());exiting=true;window.Close();
+        }catch(Exception ex){quitting=false;window.IsEnabled=true;Reveal();refresh.Start();MessageBox.Show(window,"Could not stop all background processes: "+ex.Message,"Evacopy");}
     }
     static System.Drawing.Icon LoadTrayIcon(){using(var stream=System.Reflection.Assembly.GetExecutingAssembly().GetManifestResourceStream("Evacopy.ico")){return stream==null?(System.Drawing.Icon)System.Drawing.SystemIcons.Application.Clone():new System.Drawing.Icon(stream);}}
     static string StartupCommand(){return "\""+System.Reflection.Assembly.GetExecutingAssembly().Location+"\" --startup";}
@@ -64,6 +71,3 @@ partial class App {
     }
     static IntPtr DesktopMessages(IntPtr hwnd,int message,IntPtr w,IntPtr l,ref bool handled){if((uint)message==ShowMessage || (message==0x312 && w.ToInt32()==1)){Reveal();handled=true;}return IntPtr.Zero;}
 }
-
-
-

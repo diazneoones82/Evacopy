@@ -1,11 +1,12 @@
 ﻿# SPDX-License-Identifier: GPL-3.0-or-later
 # Copyright (C) 2026 diazneoones82
+param([string]$ExecutablePath = 'dist\release\Evacopy.exe')
 $ErrorActionPreference = 'Stop'
 $testRoot = Join-Path $PSScriptRoot ('test-results\' + [Guid]::NewGuid().ToString('N'))
 $previousProfile = $env:EVACOPY_PROFILE
 try {
     $env:EVACOPY_PROFILE = Join-Path $testRoot 'jobs'
-    $test = Start-Process -FilePath (Join-Path $PSScriptRoot 'dist\release\Evacopy.exe') -ArgumentList '--integration-test' -WindowStyle Hidden -Wait -PassThru
+    $test = Start-Process -FilePath (Join-Path $PSScriptRoot $ExecutablePath) -ArgumentList '--integration-test' -WindowStyle Hidden -Wait -PassThru
     if ($test.ExitCode -ne 0) {
         $errorFile = Join-Path $testRoot 'ERROR.txt'
         if (Test-Path -LiteralPath $errorFile) { Get-Content -LiteralPath $errorFile }

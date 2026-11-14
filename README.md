@@ -1,10 +1,10 @@
-# Evacopy
+﻿# Evacopy
 
 Run **dist\release\Evacopy.exe**. This is the current release; EXEs elsewhere in dist are earlier builds. Close earlier versions before opening Evacopy so they release their global shortcuts. One portable executable contains the UI, service and worker entry points, theme, and icon. Windows Robocopy and .NET Framework 4.8 are required (included in modern Windows). No installer, administrator access or package downloads are needed.
 
 ## Multiple copy jobs
 
-Choose a source folder or multiple files and a destination. Missing destination folders are created. For folder selections, **Copy source folder itself** is enabled by default: selecting `C:\Source\Photos` and destination `D:\Backup` copies into `D:\Backup\Photos`, creating that folder when needed. If the selected destination is already named `Photos`, it is reused, avoiding `Photos\Photos`. Uncheck this option to copy only the source folder's contents directly into the destination. The option is disabled for individual-file selections. Both modes retain nested folders and empty folders. Existing destination files may be overwritten; destination-only files are retained.
+Click source **Browse…**, then choose **Folder…** or **Files…** from the menu underneath. Use destination **Browse…** to select the destination. Both pickers open at the currently displayed path; file selections start in the selected file location. If a destination path does not yet exist, the picker opens at its closest existing parent folder. A new job also remembers the previous source browsing location. Missing destination folders are created. For folder selections, **Copy source folder itself** is enabled by default: selecting `C:\Source\Photos` and destination `D:\Backup` copies into `D:\Backup\Photos`, creating that folder when needed. If the selected destination is already named `Photos`, it is reused, avoiding `Photos\Photos`. Uncheck this option to copy only the source folder's contents directly into the destination. The option is disabled for individual-file selections. Both modes retain nested folders and empty folders. Existing destination files may be overwritten; destination-only files are retained.
 
 Choose 8–128 Robocopy threads and Normal, AboveNormal or High CPU priority independently for each job. Click **Start copy job**. The **Transfers** tab opens to show the job list. Click **+ ⚙** to choose the next source on the **New job** tab; choose its destination and settings, then start another job. Select a job to see its status, percentage and speed or use **Cancel selected**. Jobs with overlapping destinations, conflicting source/destination folders, or source-deletion conflicts are rejected.
 
@@ -14,7 +14,7 @@ Copy percentages and average speeds are estimates from destination file lengths 
 
 Evacopy uses a small **per-user supervisor service**, running as `Evacopy.exe --service`, with one independent `Evacopy.exe --worker <job-id>` process per job and a separate Robocopy child for actual copying. This is a user-mode supervisor, not a kernel driver or an installed Windows Service Control Manager service. It runs under your user account without elevation.
 
-The UI communicates asynchronously over a named pipe restricted to your Windows account. Copying, CRC reads and filesystem scanning happen in workers. Closing or exiting the UI does not cancel jobs. Reopening the UI reconnects to the service and restores the job list. Job manifests and atomic progress snapshots are stored locally. The service exits after an idle interval without active workers. A service restart can reconnect to surviving workers using their process identity. A Windows job object terminates the Robocopy child if its worker crashes. Failed or interrupted jobs are not automatically resumed.
+The UI communicates asynchronously over a named pipe restricted to your Windows account. Copying, CRC reads and filesystem scanning happen in workers. Closing or minimizing the window hides it to the tray without cancelling jobs. Choosing **Exit** from the tray cancels active jobs and stops all workers, Robocopy children and the supervisor before closing the UI. Shutdown first requests cancellation and then terminates workers that do not stop within the grace period. Reopening the UI reconnects to the service and restores the job list. Job manifests and atomic progress snapshots are stored locally. The service exits after an idle interval without active workers. A service restart can reconnect to surviving workers using their process identity. A Windows job object terminates the Robocopy child if its worker crashes. Failed or interrupted jobs are not automatically resumed.
 
 High priority is requested for each worker and its Robocopy process; Windows may deny it. Priority and thread count do not guarantee full CPU usage. Storage throughput and concurrent jobs affect performance.
 
@@ -34,7 +34,7 @@ The interface uses the requested six-color palette: background `#051125`, cards 
 
 **Start with Windows** starts Evacopy hidden in the tray at sign-in. Put the EXE in a permanent location before enabling it. The checkbox removes the startup entry when disabled. Evacopy uses its own startup setting; disable the old SuperRobocopy startup option if you enabled that earlier.
 
-The global shortcut tries **Win+C**, then **Ctrl+Alt+C** if Windows reserves Win+C. The checkbox displays the active shortcut. If both are unavailable, use the tray icon. Shortcuts work while the UI process is running. Close/minimize hide it to the tray; double-click the tray icon to reopen. The tray menu's **Exit** quits the UI while jobs continue in the background.
+The global shortcut tries **Win+C**, then **Ctrl+Alt+C** if Windows reserves Win+C. The checkbox displays the active shortcut. If both are unavailable, use the tray icon. Shortcuts work while the UI process is running. Close/minimize hide it to the tray; double-click the tray icon to reopen. The tray menu's **Exit** stops active jobs and all Evacopy background processes before quitting.
 
 ## Build and validation
 
@@ -43,7 +43,7 @@ The global shortcut tries **Win+C**, then **Ctrl+Alt+C** if Windows reserves Win
 .\test.ps1
 ```
 
-Build checks cover the CRC known vector, path boundaries, compact layout, checkbox contrast and embedded icon. Integration checks launch real supervisor, worker and Robocopy processes and cover simultaneous jobs, independent PIDs, overlap rejection, supervisor restart recovery, copy/CRC success, Unicode paths, empty directories, source preservation, verified move cleanup and cancellation. Test reports are saved under test-results. Test fixtures use an isolated service/profile and do not alter startup settings.
+Build checks cover the CRC known vector, path boundaries, compact layout, checkbox contrast and embedded icon. Integration checks launch real supervisor, worker and Robocopy processes and cover simultaneous jobs, independent PIDs, overlap rejection, supervisor restart recovery, copy/CRC success, Unicode paths, empty directories, source preservation, verified move cleanup, cancellation, and complete shutdown while idle and during an active copy. Picker checks cover current folders, file parent folders, nonexistent destination paths and the native Explorer starting location. Test reports are saved under test-results. Test fixtures use an isolated service/profile and do not alter startup settings.
 
 The EXE is unsigned. Try disposable data before enabling permanent deletion for important files.
 
@@ -54,4 +54,3 @@ Copyright (C) 2026 diazneoones82.
 Evacopy is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version (**GPL-3.0-or-later**).
 
 Evacopy is distributed without any warranty, including the implied warranties of merchantability or fitness for a particular purpose. See [LICENSE](LICENSE) for the complete license terms.
-
